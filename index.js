@@ -32,6 +32,6 @@ app.get('/', (req, res) => {
 app.use(errorHandler)
 mongoose.connect(CONNECTION_URL)
     .then(() => app.listen(PORT, () => console.log(`server running at port : ${PORT}`)))
-    .catch((err) => console.error(err.message))
+    .catch((err) => console.error(err))
 
 

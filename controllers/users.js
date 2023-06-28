@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 
 export const signIn = async (req, res) => {
     const { email, password } = req.body
+    console.log(email, password)
     try {
         const user = await userModel.findOne({ email })
         if (!user) {
@@ -22,6 +23,8 @@ export const signIn = async (req, res) => {
 
     } catch (error) {
         console.log(error)
+        res.status(404).json({message:`login failed ${error}`})
+        
     }
 
 }

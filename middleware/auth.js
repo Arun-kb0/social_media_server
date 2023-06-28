@@ -18,11 +18,11 @@ const auth = async (req, res, next) => {
             decodeData = jwt.decode(token)
             req.userId = decodeData?.sub
         }
-        console.log(decodeData)
+        // console.log(decodeData)
         next()
     } catch (error) {
-        console.error(error)
-
+        // console.error(error)
+        res.status(404).json({message: `auth failed ${error}`})
     }
 }
 

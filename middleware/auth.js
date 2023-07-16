@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { socialUserModel } from '../models/socialUserModel.js'
 
 
 const auth = async (req, res, next) => {
@@ -17,12 +18,14 @@ const auth = async (req, res, next) => {
             console.log("google token")
             decodeData = jwt.decode(token)
             req.userId = decodeData?.sub
+            
+
         }
         // console.log(decodeData)
         next()
     } catch (error) {
         // console.error(error)
-        res.status(404).json({message: `auth failed ${error}`})
+        res.status(404).json({ message: `auth failed ${error}` })
     }
 }
 

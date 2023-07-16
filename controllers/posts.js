@@ -23,6 +23,20 @@ export const getPosts = async (req, res) => {
     }
 }
 
+export const getUserPosted = async (req, res) => {
+    // const {userId} = req.query //for testing
+    const {userId} = req
+    console.log(userId)
+    
+    try {
+        const userPosts = await postModel.find({creator_id:userId})
+        res.status(200).json({message:'getUserPost success ', userPosts})
+    } catch (error) {
+        console.log(error)
+        res.status(404).json({ message: 'getUserPosts failed ', error })
+    }
+}
+
 // * create post
 export const createPost = async (req, res) => {
     const post = req.body
@@ -34,7 +48,7 @@ export const createPost = async (req, res) => {
 
     try {
         await newPost.save()
-        res.status(200).json({message:'post created. ' , newPost})
+        res.status(200).json({ message: 'post created. ', newPost })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -150,7 +164,7 @@ export const getLiked = async (req, res) => {
     // const { postIds, userId } = req.body // for test
 
     const { body: { postIds }, userId } = req
-    console.log(postIds, userId)
+    // console.log(postIds, userId)
 
     const ids = postIds?.map(id => mongoose.Types.ObjectId.createFromHexString(id))
     try {
@@ -308,12 +322,14 @@ export const getComments = async (req, res) => {
         ])
         res.status(200).json({
             message: 'getComment success ',
-            comments:result[0].postComments,
-            _id:result[0]._id,
+            comments: result[0].postComments,
+            _id: result[0]._id,
         })
     } catch (error) {
         console.log(error)
-        res.status(404).json({messgae:`getComments failed ${error} `})
+        res.status(404).json({ messgae: `getComments failed ${error} ` })
     }
 }
+
+
 

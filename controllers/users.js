@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { socialUserModel } from "../models/socialUserModel.js"
 import { allUsersModel } from "../models/allUsersModel.js"
 import { followModel } from "../models/followModel.js"
+import { notificationModel } from "../models/notificationModel.js"
 
 
 
@@ -268,5 +269,17 @@ export const getFollowing = async (req, res) => {
     } catch (error) {
         console.log(error)
         res.status(400).json({ messgae: "get following faild " })
+    }
+}
+
+
+export const getAllNotifications = async (req, res) => {
+    // const { userId } = req.query
+    const { userId } = req
+    try {
+        const data = await notificationModel.findOne({ id: userId })
+        res.status(200).json({ message: "getAllNotifications success", notifications: data?.notifications })
+    } catch (error) {
+        res.status(400).json({ message: "getAllNotifications faild" })
     }
 }

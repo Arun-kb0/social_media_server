@@ -6,7 +6,8 @@ const allUsersSchema = mongoose.Schema({
     picture: String,
     provider: String,
     id: { type: String, required: true },
-    isOnline:{type:Boolean ,default:false }
+    isOnline: { type: Boolean, default: false },
+    socketId: String
 })
 
-export const allUsersModel = mongoose.model('allusers',allUsersSchema)
+export const allUsersModel = mongoose.model('allusers', allUsersSchema)

@@ -12,14 +12,13 @@ const auth = async (req, res, next) => {
         let decodeData
         if (token && isCustomeAuth) {
             console.log("user token")
-            decodeData = jwt.verify(token, 'test')
+            // decodeData = jwt.verify(token, 'test')
+            decodeData = jwt.verify(token, process.env.SECRECT_KEY)
             req.userId = decodeData.id
         } else {
             console.log("google token")
             decodeData = jwt.decode(token)
             req.userId = decodeData?.sub
-            
-
         }
         // console.log(decodeData)
         next()

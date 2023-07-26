@@ -13,7 +13,7 @@ import { Server } from "socket.io";
 import http from 'http'
 import { allowedOrigins } from "./config/allowedOrigins.js";
 
-
+import { authSocketio } from "./middleware/authSocketio.js";
 
 const app = express()
 dotenv.config()
@@ -26,12 +26,11 @@ app.use(logger)
 
 
 const server = http.createServer(app)
- const io = new Server(server, {
-        cors: {
-            origin: allowedOrigins,
-            methods: ["GET", "POST"],
-        }
-    })
+export const io = new Server(server, {
+    cors: {
+        origin: allowedOrigins,
+    }
+})
 
 
 
@@ -40,11 +39,11 @@ app.use(express.json())
 
 app.use('/user', userRoutes)
 app.use('/posts', postRoutes)
-app.use('/chatreq' , chatMessage)
+app.use('/chatreq', chatMessage)
 
-app.use('/chat', socketRoutes)
-io.on("connection" , socketRoutes.onConnection)
-// socketRoutes.onConnection(server)
+io.use((socket, next) => authSocketio(socket, next))
+
+io.on("connection", socketRoutes.onConnection)
 
 app.get('/', (req, res) => {
     res.status(200).send('server running ')

@@ -3,9 +3,37 @@ import { userChatModel } from "../models/userChatsModel.js"
 
 
 export const joinRoom = async (socket, data) => {
-    const { currentUserId, roomId, chatUserId, chatUserName, chatUserPhoto } = data
+    const { currentUserId, currentUsername, currentUserPhoto, roomId, chatUserId, chatUserName, chatUserPhoto } = data
+
     try {
-        socket.join(roomId)
+        socket?.join(roomId)
+
+        const createChatUserDoc = async () => {
+            const chatUseRroomIdValue = {
+                lastMessage: '',
+                user: {
+                    userId: currentUserId,
+                    name: currentUsername,
+                    photo: currentUserPhoto,
+                }
+            }
+
+            const isChatUserExists = await userChatModel.findOne({ id: chatUserId })
+            if (isChatUserExists) {
+                const data = await userChatModel.updateOne(
+                    { id: chatUserId },
+                    { $set: { [`chatIds.${roomId}`]: chatUseRroomIdValue } }
+                )
+            } else {
+                const newChatUserDoc = {
+                    id: chatUserId,
+                    updatedAt: new Date(),
+                    chatIds: { [roomId]: chatUseRroomIdValue }
+                }
+                const data = await userChatModel.create(newChatUserDoc)
+            }
+
+        }
 
         const roomIdValue = {
             lastMessage: '',
@@ -22,6 +50,7 @@ export const joinRoom = async (socket, data) => {
                 { $set: { [`chatIds.${roomId}`]: roomIdValue } }
             )
             // console.log(data)
+            await createChatUserDoc()
         } else {
             const newDoc = {
                 id: currentUserId,
@@ -29,10 +58,10 @@ export const joinRoom = async (socket, data) => {
                 chatIds: { [roomId]: roomIdValue }
             }
             const data = await userChatModel.create(newDoc)
+            await createChatUserDoc()
             // console.log(data)
         }
-        
-        console.log(`users with id ${socket.id} joined room ${data.roomId}`)
+        socket && console.log(`users with id ${socket.id} joined room ${data.roomId}`)
     } catch (error) {
         console.log(error)
     }

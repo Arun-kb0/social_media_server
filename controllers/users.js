@@ -5,6 +5,8 @@ import { socialUserModel } from "../models/socialUserModel.js"
 import { allUsersModel } from "../models/allUsersModel.js"
 import { followModel } from "../models/followModel.js"
 import { notificationModel } from "../models/notificationModel.js"
+import mongoose from "mongoose"
+import { joinRoom } from "./chatSocket.js"
 
 
 
@@ -56,8 +58,7 @@ export const signIn = async (req, res) => {
         res.status(200).json({ result, token, })
 
     } catch (error) {
-        console.log(error)
-        res.status(404).json({ message: `login failed ${error}` })
+        res.status(401).json({ message: `login failed ` , error })
 
     }
 
@@ -108,7 +109,9 @@ export const signUp = async (req, res) => {
         // res.status(200).json({ result, token, userData })
         res.status(200).json({ result, token })
     } catch (error) {
-        console.error(error);
+        res.status(401).json({ message: 'auth failed ' ,error})
+
+
     }
 }
 
@@ -148,8 +151,7 @@ export const socialSignIn = async (req, res) => {
         await setIsOnline({ userId: result.id, state: true })
         res.status(200).json({ message: 'auth success ', result })
     } catch (error) {
-        console.log(error)
-        res.status(404).json({ message: 'auth failed ' })
+        res.status(401).json({ message: 'auth failed ' ,error})
     }
 }
 
@@ -175,7 +177,7 @@ export const getUsers = async (req, res) => {
     const { page } = req.query
     console.log(page)
     try {
-        const LIMIT = 10
+        const LIMIT = 8
         const startIndex = (Number(page) - 1) * LIMIT
         const total = await allUsersModel.countDocuments({})
         const users = await allUsersModel.find().limit(LIMIT).skip(startIndex)
@@ -194,7 +196,7 @@ export const getUsers = async (req, res) => {
 
 export const follow = async (req, res) => {
     // const { ownerName, followUserId, name, photo, userId } = req.body
-    const { body: { ownerName, followUserId, name, photo }, userId } = req
+    const { body: { ownerName, ownerPhoto, followUserId, name, photo }, userId } = req
 
     console.log(followUserId, name, photo, ownerName, userId)
     try {
@@ -217,6 +219,7 @@ export const follow = async (req, res) => {
                     id: followUserId,
                     followers: [followerData]
                 })
+
 
             }
         }
@@ -250,10 +253,45 @@ export const follow = async (req, res) => {
             await updateFollower()
         }
 
+        // from chatsocket
+        let roomId
+        if (userId > followUserId) {
+            roomId = userId + followUserId
+        } else {
+            roomId = followUserId + userId
+        }
+        const data = {
+            currentUserId: userId,
+            currentUsername: ownerName,
+            currentUserPhoto: ownerPhoto,
+            roomId,
+            chatUserId: followUserId,
+            chatUserName: name,
+            chatUserPhoto: photo,
+        }
+        joinRoom(null, data)
+
         res.status(200).json({ message: 'follow success ', following: followingUserData })
     } catch (error) {
         console.log(error)
         res.status(404).json({ message: 'follow failed ', error })
+    }
+}
+
+export const unfollow = async (req, res) => {
+    const { userId, query: { followingId } } = req
+    console.log(userId, followingId)
+    
+    try {
+        const data = await followModel.updateOne(
+            { id: userId },
+            { $pull: { following: { id: followingId } } }
+        )
+        console.log(data)
+        res.status(200).json({ message: "unfollow success", data })
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({ message: "unfollow faild", error })
     }
 }
 
@@ -278,8 +316,64 @@ export const getAllNotifications = async (req, res) => {
     const { userId } = req
     try {
         const data = await notificationModel.findOne({ id: userId })
-        res.status(200).json({ message: "getAllNotifications success", notifications: data?.notifications })
+        res.status(200).json({ message: "getAllNotifications success", data })
     } catch (error) {
         res.status(400).json({ message: "getAllNotifications faild" })
+    }
+}
+
+export const removeAllNotifications = async (req, res) => {
+    // const { userId } = req.query
+    const { userId } = req
+    try {
+        const data = await notificationModel.updateOne(
+            { id: userId },
+            { notifications: [] }
+        )
+        res.status(200).json({ message: "removeNotifications success", data })
+    } catch (error) {
+        res.status(400).json({ message: "removeNotifications faild", error })
+    }
+}
+
+export const removeNotification = async (req, res) => {
+    // let { notificationId, creatorId } = req.query
+    let { body: { notificationId, type }, userId } = req
+    console.log(notificationId, type, userId)
+    // notificationId = new mongoose.Types.ObjectId(notificationId)
+    try {
+        let data
+        if (type === 'message') {
+            console.log("message notification")
+            data = await notificationModel.updateOne(
+                {
+                    id: userId,
+                    [`messageNotifications.${notificationId}.messageCount`]: { $exists: true }
+                },
+                {
+                    totalMessageCount: 0,
+                    [`messageNotifications.${notificationId}.messageCount`]: 0
+                }
+            )
+        } else {
+            data = await notificationModel.updateOne(
+                {
+                    id: userId,
+                    "notifications._id": notificationId,
+                },
+                {
+                    $pull: {
+                        "notifications": {
+                            _id: notificationId,
+                        }
+                    }
+                }
+            )
+        }
+        console.log(data)
+        res.status(200).json({ message: "removeNotification success", data })
+    } catch (error) {
+        console.log(error)
+        res.status(400).json({ message: "removeNotification faild", error })
     }
 }

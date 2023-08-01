@@ -25,12 +25,12 @@ export const getPosts = async (req, res) => {
 
 export const getUserPosted = async (req, res) => {
     // const {userId} = req.query //for testing
-    const {userId} = req
+    const { userId } = req
     console.log(userId)
-    
+
     try {
-        const userPosts = await postModel.find({creator_id:userId})
-        res.status(200).json({message:'getUserPost success ', userPosts})
+        const userPosts = await postModel.find({ creator_id: userId })
+        res.status(200).json({ message: 'getUserPost success ', userPosts })
     } catch (error) {
         console.log(error)
         res.status(404).json({ message: 'getUserPosts failed ', error })
@@ -322,12 +322,45 @@ export const getComments = async (req, res) => {
         ])
         res.status(200).json({
             message: 'getComment success ',
-            comments: result[0].postComments,
-            _id: result[0]._id,
+            comments: result[0]?.postComments,
+            _id: result[0]?._id,
         })
     } catch (error) {
         console.log(error)
         res.status(404).json({ messgae: `getComments failed ${error} ` })
+    }
+}
+
+export const deleteComment = async (req, res) => {
+    const { userId, body: { postId, commentId, commentedUserId, creatorId } } = req
+
+    console.log(postId, creatorId, commentId, commentedUserId)
+    console.log("creatorId", creatorId, "commentedUserId", commentedUserId, "userId", userId)
+
+
+
+    // commentId = mongoose.Types.ObjectId.createFromHexString(commentId)
+    // postId = mongoose.Types.ObjectId.createFromHexString(postId)
+
+
+    try {
+        console.log(commentedUserId === userId)
+        console.log(userId === creatorId)
+        if (commentedUserId === userId | userId === creatorId) {
+            const data = await commentModel.updateOne(
+                { _id: postId, "comments._id": commentId },
+                { $pull: { comments: { _id: commentId } } }
+            )
+
+            console.log(data)
+            res.status(200).json({ message: 'delete comment success', data })
+            return
+        }
+        console.log('unauthorized')
+        res.status(401).json({ message: 'unauthorized action' })
+    } catch (error) {
+        console.log(error)
+        res.status(200).json({ message: 'delete comment failed', error })
     }
 }
 

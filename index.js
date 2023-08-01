@@ -12,8 +12,9 @@ import chatMessage from './routes/chatReq.js'
 import { Server } from "socket.io";
 import http from 'http'
 import { allowedOrigins } from "./config/allowedOrigins.js";
-
 import { authSocketio } from "./middleware/authSocketio.js";
+
+import compression from "compression";
 
 const app = express()
 dotenv.config()
@@ -22,7 +23,6 @@ const PORT = process.env.PORT || 3001
 const CONNECTION_URL = process.env.CONNECTION_URL
 
 app.use(logger)
-
 
 
 const server = http.createServer(app)
@@ -36,6 +36,12 @@ export const io = new Server(server, {
 
 app.use(cors(corsOptions))
 app.use(express.json())
+
+app.use(compression({
+    level:6,
+    threshold:10*1000,
+}))
+
 
 app.use('/user', userRoutes)
 app.use('/posts', postRoutes)

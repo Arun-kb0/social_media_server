@@ -11,17 +11,26 @@ import { joinRoom } from "./chatSocket.js"
 
 
 
-const setIsOnline = async ({ userId, state }) => {
+export const setIsOnline = async ({ userId, state }) => {
+    console.log("set user online ", state)
     console.log(userId)
     try {
+        const result = await allUsersModel.findOneAndUpdate(
+            { id: userId },
+            { isOnline: state },
+            { new: true }
+        )
+
         const data = await followModel.updateMany(
             { "following.id": userId },
             { $set: { "following.$.isOnline": state } }
         )
         console.log(data)
+        return result
     } catch (error) {
         console.log(error)
     }
+
 }
 
 
@@ -38,28 +47,17 @@ export const signIn = async (req, res) => {
         const isPasswordCorrect = await bcrypt.compare(password, user.password)
         if (!isPasswordCorrect)
             return res.status(400).json({ message: 'Invaild Credentials' })
+
         const token = jwt.sign({
             email: user.email,
             id: user._id
         }, 'test', { expiresIn: '1h' })
 
-        const result = await allUsersModel.findOneAndUpdate(
-            { id: user._id },
-            { isOnline: true },
-            { new: true }
-        )
-        await setIsOnline({ userId: result.id, state: true })
-        // await setIsOnline()
-        // console.log(userData)
-
-        //! replace the result with userData for isOnline updation
-
-        // res.status(200).json({ result: user, token })
+        const result = await setIsOnline({ userId: user.id, state: true })
         res.status(200).json({ result, token, })
 
     } catch (error) {
-        res.status(401).json({ message: `login failed ` , error })
-
+        res.status(401).json({ message: `login failed `, error })
     }
 
 }
@@ -73,45 +71,36 @@ export const signUp = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 12)
-        // const result = await userModel.create({
         const user = await userModel.create({
             email,
             password: hashedPassword,
             name: `${firstName} ${lastName}`
         })
 
-        // console.log(result)
-        // await userModel.updateOne(
-        //     { _id: result._id },
-        //     { id: result._id }
-        // )
-
         await userModel.updateOne(
             { _id: user._id },
             { id: user._id }
         )
-        const result = await allUsersModel.create({
+
+        let result
+        result = await allUsersModel.create({
             email,
             name: `${firstName} ${lastName}`,
             picture: '',
-            // id: result._id,
             id: user._id,
             isOnline: true
         })
 
         const token = jwt.sign({
-            // email: result.email, id: result._id
             email: result.email, id: result.id
         }, 'test', { expiresIn: '1h' })
 
-        await setIsOnline({ userId: result.id, state: true })
+        result = await setIsOnline({ userId: user._id, state: true })
 
-        // res.status(200).json({ result, token, userData })
         res.status(200).json({ result, token })
     } catch (error) {
-        res.status(401).json({ message: 'auth failed ' ,error})
-
-
+        console.log(error)
+        res.status(401).json({ message: 'auth failed ', error })
     }
 }
 
@@ -137,39 +126,24 @@ export const socialSignIn = async (req, res) => {
                 id: data.sub,
                 isOnline: true
             })
-            // console.log('newSocialUser')
-            console.log(result)
-        } else {
-            result = await allUsersModel.findOneAndUpdate(
-                { id: user.id },
-                { isOnline: true },
-                { new: true }
-            )
-            console.log(result)
         }
 
-        await setIsOnline({ userId: result.id, state: true })
+        result = await setIsOnline({ userId: user.id, state: true })
+        console.log(result)
         res.status(200).json({ message: 'auth success ', result })
     } catch (error) {
-        res.status(401).json({ message: 'auth failed ' ,error})
+        res.status(401).json({ message: 'auth failed ', error })
     }
 }
 
 export const logout = async (req, res) => {
     const { userId } = req.query
-
     try {
-        const result = await allUsersModel.findOneAndUpdate(
-            { id: userId },
-            { isOnline: false },
-            { new: true }
-        )
-        await setIsOnline({ userId: userId, state: false })
-        console.log(result)
+        const data = await setIsOnline({ userId: userId, state: false })
         res.status(200).json({ message: 'logout success' })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ message: 'logout failed', error })
+        res.status(400).json({ message: 'logout failed', error })
     }
 }
 
@@ -281,7 +255,7 @@ export const follow = async (req, res) => {
 export const unfollow = async (req, res) => {
     const { userId, query: { followingId } } = req
     console.log(userId, followingId)
-    
+
     try {
         const data = await followModel.updateOne(
             { id: userId },
@@ -307,6 +281,30 @@ export const getFollowing = async (req, res) => {
     } catch (error) {
         console.log(error)
         res.status(400).json({ messgae: "get following faild " })
+    }
+}
+
+// ! finish get followers fun
+export const getFollowers = async (req, res) => {
+    // const {userId} = req.query
+    const { userId } = req
+    console.log("get followers",userId)
+    try {
+        const result = await followModel.aggregate([
+            { $match: { id: userId } },
+            {$project: {_id:0 , followers:1}}
+        ])
+        console.log(result[0])
+        
+        res.status(200).json({
+            message: "get followers success",
+            followers: result[0]?.followers
+                ? result[0].followers 
+                : null
+        })
+    } catch (error) {
+        console.log(error)
+        res.status(401).json({message:"get followers faild" ,error })
     }
 }
 

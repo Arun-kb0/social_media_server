@@ -2,6 +2,7 @@ import mongoose, { isValidObjectId } from "mongoose"
 import { postModel } from "../models/postsModel.js"
 import { likeModel } from "../models/likeModel.js"
 import { commentModel } from "../models/commentModel.js"
+import { allUsersModel } from '../models/allUsersModel.js'
 
 // * get post
 export const getPosts = async (req, res) => {
@@ -110,10 +111,7 @@ export const likePost = async (req, res) => {
         const updateLikeCount = async () => {
             const result = await likeModel.aggregate([
                 { $match: { _id: new mongoose.Types.ObjectId(postId) } },
-                {
-                    $project:
-                        { likeCount: { $size: "$user" } }
-                }
+                { $project: { likeCount: { $size: "$user" } } }
             ])
             await postModel.updateOne({ _id: postId }, { like_count: result[0].likeCount })
             console.log("count updated " + (result[0].likeCount))
@@ -322,8 +320,8 @@ export const getComments = async (req, res) => {
         ])
         res.status(200).json({
             message: 'getComment success ',
-            comments: result[0]?.postComments,
-            _id: result[0]?._id,
+            comments: result[0]?.postComments ?  result[0]?.postComments : null,
+            _id: result[0]?._id ? result[0]?._id : null,
         })
     } catch (error) {
         console.log(error)
@@ -331,17 +329,12 @@ export const getComments = async (req, res) => {
     }
 }
 
+
 export const deleteComment = async (req, res) => {
     const { userId, body: { postId, commentId, commentedUserId, creatorId } } = req
 
     console.log(postId, creatorId, commentId, commentedUserId)
-    console.log("creatorId", creatorId, "commentedUserId", commentedUserId, "userId", userId)
-
-
-
-    // commentId = mongoose.Types.ObjectId.createFromHexString(commentId)
-    // postId = mongoose.Types.ObjectId.createFromHexString(postId)
-
+    console.log("creatorId", creatorId, "commentedUserId", commentedUserId, "userId", userId, "postId", postId)
 
     try {
         console.log(commentedUserId === userId)
@@ -349,13 +342,35 @@ export const deleteComment = async (req, res) => {
         if (commentedUserId === userId | userId === creatorId) {
             const data = await commentModel.updateOne(
                 { _id: postId, "comments._id": commentId },
-                { $pull: { comments: { _id: commentId } } }
+                { $pull: { comments: { _id: commentId } }, }
             )
 
+            const result = await commentModel.aggregate([
+                { $match: { _id: mongoose.Types.ObjectId.createFromHexString(postId) } },
+                {
+                    $project: {
+                        _id: 0,
+                        count: {
+                            $size: '$comments'
+                        }
+                    }
+                }
+            ]);
+            console.log(result[0].count)
+
+            if (result[0].length > 0) {
+                const postData = await postModel.updateOne(
+                    { _id: postId },
+                    { comment_count: result.count }
+                )
+                console.log("postData", postData)
+            }
+
             console.log(data)
-            res.status(200).json({ message: 'delete comment success', data })
+            res.status(200).json({ message: 'delete comment success', count: result[0].count })
             return
         }
+
         console.log('unauthorized')
         res.status(401).json({ message: 'unauthorized action' })
     } catch (error) {

@@ -14,7 +14,7 @@ export const sendNotification = async ({ socket, data }) => {
     const { username, postId, creatorId, type } = data
     const { userId } = socket
     console.log(data)
-    
+
     try {
         const creator = await allUsersModel.findOne({ id: creatorId })
         const sendNotificationToAuther = async () => {
@@ -123,10 +123,7 @@ export const sendNotification = async ({ socket, data }) => {
         } else {
             console.log("user not  exists in collection")
             if (data.type === 'message') {
-                // const newNotification = await notificationModel.create({
-                //     id: creatorId,
-                //     messageNotifications: [notification]
-                // })
+
                 const data = await notificationModel.create({
                     id: creatorId,
                     totalMessageCount: 1,
@@ -139,7 +136,9 @@ export const sendNotification = async ({ socket, data }) => {
             } else {
                 const newNotification = await notificationModel.create({
                     id: creatorId,
-                    notifications: [notification]
+                    notifications: [notification],
+                    messageNotifications: {}
+
                 })
             }
             await sendNotificationToAuther()

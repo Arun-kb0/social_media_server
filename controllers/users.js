@@ -252,6 +252,7 @@ export const follow = async (req, res) => {
     }
 }
 
+
 export const unfollow = async (req, res) => {
     const { userId, query: { followingId } } = req
     console.log(userId, followingId)
@@ -284,7 +285,6 @@ export const getFollowing = async (req, res) => {
     }
 }
 
-// ! finish get followers fun
 export const getFollowers = async (req, res) => {
     // const {userId} = req.query
     const { userId } = req

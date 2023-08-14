@@ -11,7 +11,7 @@ const chatUserDetailsSchema = mongoose.Schema({
 })
 
 const userChatSchema = mongoose.Schema({
-    id: { type: String, required: true },
+    id: { type: String, required: true , index:true },
     updatedAt: { type: Date, required: true },
     chatIds: {
         type: mongoose.Schema.Types.Map,

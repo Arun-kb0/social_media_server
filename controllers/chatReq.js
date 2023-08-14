@@ -37,13 +37,3 @@ export const getMessages = async (req, res) => {
         res.status(404).json({ message: "getMessages failed", error })
     }
 }
-
-export const addChatUser = async(req,res)=>{
-
-    try {
-        
-        res.status(200).json({message:"addChatUser success"})
-    } catch (error) {
-        res.status(400).json({message:"addChatUser failed"})
-    }
-}

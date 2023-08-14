@@ -28,7 +28,7 @@ const messageNotificationsSchema = mongoose.Schema({
 
 
 const notificationSchema = mongoose.Schema({
-    id: { type: String, required: true },
+    id: { type: String, required: true  , index:true},
     notifications: [notificationDataSchema],
     totalMessageCount: { type: Number, default: 0 },
     messageNotifications: {

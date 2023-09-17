@@ -10,9 +10,8 @@ export const adminLogin = async (req, res) => {
   try {
     const user = await adminUserModel.findOne({ email })
     if (!user) {
-      return res.status(401).json({ message: "user does not exists" })
+      return res.status(401).json({ message: "user does not exists"})
     }
-    console.log(user)
 
     const isPasswordCorrect = await bycrypt.compare(password, user.password)
     if (!isPasswordCorrect) {
@@ -24,7 +23,7 @@ export const adminLogin = async (req, res) => {
       id: user._id
     }, "test", { expiresIn: '1h' })
 
-    res.status(200).json({ message: "login success", user, token })
+   return res.status(200).json({ message: "login success", user, token })
 
   } catch (error) {
     console.log(error)

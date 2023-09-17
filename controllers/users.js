@@ -150,7 +150,7 @@ export const logout = async (req, res) => {
 
 export const getUsers = async (req, res) => {
     const { page } = req.query
-    console.log(page)
+    console.log("page ", page)
     try {
         const LIMIT = 8
         const startIndex = (Number(page) - 1) * LIMIT

@@ -1,5 +1,6 @@
 import { allUsersModel } from "../../models/allUsersModel.js"
 import { postModel } from "../../models/postsModel.js"
+import { promises as fsPromises } from 'fs'
 
 
 export const getAllUsers = async (req, res) => {
@@ -17,7 +18,7 @@ export const getAllUsers = async (req, res) => {
       numberOfPages: Math.ceil(total / LIMIT)
     })
   } catch (error) {
-    // console.log(error)
+    console.log(error)
     res.status(404).json({ message: 'users not found', error })
   }
 }
@@ -132,13 +133,113 @@ export const getHomeChartData = async (req, res) => {
 
 
     const data = Object.keys(postData).map((month) => {
-        return {name: month , Total: postData[month].length}
+      return { name: month, Total: postData[month].length }
     })
-    
+
     res.status(200).json({ message: "getHomeChartData success", data })
   } catch (error) {
     console.log(error)
     res.status(500).json({ message: "getHomeChartData faild", error })
   }
 }
+
+
+export const getReqLogs = async (req, res) => {
+  const { page } = req.query
+
+  try {
+    const logData = await fsPromises.readFile("logs/reqLog.log", "utf8")
+    const logEntries = logData.split('\n')
+    const totalLogCount = logEntries.length
+    const numberOfPages = Math.ceil(logEntries.length / 100)
+
+    const initial = Number(page) === 1 ? 0 : (page * 100)-100
+    const final = page < totalLogCount ? initial + 100 : totalLogCount
+
+    const slicedLogEntries = logEntries.slice(initial, final)
+
+
+    console.log(slicedLogEntries.length)
+    const logJson = []
+
+    slicedLogEntries.forEach((entry) => {
+      const [date, time, id, method, url, origin] = entry.split('\t')
+      const formatedDate = date.slice(0, 4) + "/" + date.slice(4, 6) + "/" + date.slice(6, 8)
+      const logObj = {
+        date: formatedDate, time, id, method, url, origin
+      }
+      logJson.push(logObj)
+    })
+
+
+    res.status(200).json({
+      message: "getLogs success ",
+      totalReqLogs: totalLogCount,
+      numberOfPages,
+      currentPage: Number(page),
+      slicedLogCount: logJson.length,
+      initial,
+      final,
+      reqLog: logJson,
+    })
+
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: "getLogs failed ", error })
+  }
+
+}
+
+
+export const getErrorLogs = async (req, res) => {
+
+  const { page } = req.query
+
+  try {
+    const logData = await fsPromises.readFile("logs/errorLog.log", "utf8")
+    const logEntries = logData.split('\n')
+    const totalLogCount = logEntries.length
+    const numberOfPages = Math.ceil(logEntries.length / 100)
+
+    const initial = Number(page) === 1 ? 0 : (page * 100) - 100
+    const final = page < totalLogCount ? initial + 100 : totalLogCount
+
+    const slicedLogEntries = logEntries.slice(initial, final)
+
+
+    console.log(slicedLogEntries.length)
+    const logJson = []
+
+    slicedLogEntries.forEach((entry) => {
+      const [date, time, id, name, error, url, origin] = entry.split('\t')
+      const formatedDate = date.slice(0, 4) + "/" + date.slice(4, 6) + "/" + date.slice(6, 8)
+
+      const logObj = {
+        date: formatedDate,
+        time, id, name, error, url, origin
+      }
+      logJson.push(logObj)
+    })
+
+    res.status(200).json({
+      message: "getLogs success ",
+      totalReqLogs: totalLogCount,
+      numberOfPages,
+      currentPage: page,
+
+      slicedLogCount: logJson.length,
+      initial,
+      final,
+      errorLog: logJson,
+    })
+
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: "getLogs failed ", error })
+  }
+
+}
+
 

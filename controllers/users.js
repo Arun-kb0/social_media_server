@@ -147,9 +147,10 @@ export const logout = async (req, res) => {
     }
 }
 
+
 export const getUsers = async (req, res) => {
     const { page } = req.query
-    console.log(page)
+    console.log("page ", page)
     try {
         const LIMIT = 8
         const startIndex = (Number(page) - 1) * LIMIT
@@ -252,6 +253,7 @@ export const follow = async (req, res) => {
     }
 }
 
+
 export const unfollow = async (req, res) => {
     const { userId, query: { followingId } } = req
     console.log(userId, followingId)
@@ -284,7 +286,6 @@ export const getFollowing = async (req, res) => {
     }
 }
 
-// ! finish get followers fun
 export const getFollowers = async (req, res) => {
     // const {userId} = req.query
     const { userId } = req

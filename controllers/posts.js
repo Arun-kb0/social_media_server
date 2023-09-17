@@ -45,6 +45,7 @@ export const createPost = async (req, res) => {
         ...post,
         creator_id: req.userId,
         createdAt: new Date().toString()
+        
     })
 
     try {
@@ -99,62 +100,7 @@ export const editPost = async (req, res) => {
 
 }
 
-// * like
-export const likePost = async (req, res) => {
-    // const { postId, username, userId } = req.body  // for postman test
-    const { postId, username } = req.body
-    const { userId } = req
-    console.log(postId, username, req.userId)
 
-    try {
-        const islikeDocExsist = await likeModel.findOne({ _id: postId })
-        const updateLikeCount = async () => {
-            const result = await likeModel.aggregate([
-                { $match: { _id: new mongoose.Types.ObjectId(postId) } },
-                { $project: { likeCount: { $size: "$user" } } }
-            ])
-            await postModel.updateOne({ _id: postId }, { like_count: result[0].likeCount })
-            console.log("count updated " + (result[0].likeCount))
-            return result[0].likeCount
-        }
-
-        if (islikeDocExsist) {
-            console.log('exists')
-            const isUserExists = await likeModel.findOne({ _id: postId, 'user.id': userId })
-            if (isUserExists) {
-                console.log('user exists')
-                const data = await likeModel.updateOne(
-                    { _id: postId, 'user.id': userId }
-                    , { $pull: { user: { id: userId } } }
-                )
-                const likecount = await updateLikeCount()
-                res.status(200).json({ message: `post disliked ${postId}`, likecount, isLiked: false })
-            } else {
-                console.log('user not exists')
-                const data = await likeModel.updateOne(
-                    { _id: postId },
-                    { $push: { user: { id: userId, name: username } } }
-                )
-                const likecount = await updateLikeCount()
-                res.status(200).json({ message: `post liked ${postId}`, likecount, isLiked: true })
-            }
-
-        } else {
-            console.log('new doc')
-            const newlikedoc = new likeModel({
-                _id: postId,
-                user: [{ id: userId, name: username }]
-            })
-            await newlikedoc.save()
-            const likecount = await updateLikeCount()
-            res.status(200).json({ message: `post liked ${postId}`, likecount, isLiked: true })
-        }
-
-    } catch (error) {
-        console.log(error)
-        res.status(400).json({ message: `like post failed ${error}` })
-    }
-}
 
 
 // * getliked posts
@@ -198,97 +144,7 @@ export const getLiked = async (req, res) => {
     }
 }
 
-// * comment posts
-export const commentPost = async (req, res) => {
-    // const { postId, comment, username, userId } = req.body // for testing
-    const { body: { postId, comment, username }, userId } = req
 
-    console.log(postId, comment, username, userId)
-
-    try {
-        const isCommentDocExsist = await commentModel.findOne({ _id: postId })
-        const updateCommentInPost = async () => {
-            const result = await commentModel.aggregate([
-                {
-                    $match: {
-                        _id: mongoose.Types.ObjectId.createFromHexString(postId)
-                    }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        commetSize: {
-                            $size: "$comments"
-                        },
-                        postedComment: {
-                            $let: {
-                                vars: {
-                                    sortedArray: {
-                                        $sortArray: {
-                                            input: "$comments",
-                                            sortBy: {
-                                                _id: 1,
-                                            },
-                                        },
-                                    },
-                                },
-                                in: {
-                                    $arrayElemAt: ["$$sortedArray", -1],
-                                },
-                            },
-                        },
-                    }
-                }
-            ])
-            const data = await postModel.updateOne(
-                { _id: postId },
-                {
-                    last_comment: result[0].postedComment,
-                    comment_count: result[0].commetSize
-                }
-            )
-
-            console.log(result[0].commetSize, result[0].postedComment, data)
-            return result[0].postedComment
-        }
-
-
-
-        if (isCommentDocExsist) {
-            const data = await commentModel.updateOne(
-                { _id: postId },
-                {
-                    $push: {
-                        comments: {
-                            username,
-                            userId,
-                            comment
-                        }
-                    }
-                }
-            )
-            const postedComment = await updateCommentInPost()
-            res.status(200).json({ message: `commentPost success ${postId}`, postedComment })
-        } else {
-            const newComment = new commentModel({
-                _id: new mongoose.Types.ObjectId(postId),
-                comments: [{
-                    username,
-                    userId,
-                    comment
-                }]
-            })
-            const data = await newComment.save()
-
-            const postedComment = await updateCommentInPost()
-            res.status(200).json({ message: `commentPost success ${postId}`, postedComment })
-        }
-
-    } catch (error) {
-        // console.log(error)
-        res.status(400).json({ message: `commentPost failed ${error}` })
-    }
-}
 
 // * get comments 
 export const getComments = async (req, res) => {
@@ -320,7 +176,7 @@ export const getComments = async (req, res) => {
         ])
         res.status(200).json({
             message: 'getComment success ',
-            comments: result[0]?.postComments ?  result[0]?.postComments : null,
+            comments: result[0]?.postComments ? result[0]?.postComments : null,
             _id: result[0]?._id ? result[0]?._id : null,
         })
     } catch (error) {

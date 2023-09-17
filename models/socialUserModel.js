@@ -5,7 +5,7 @@ const socialUserSchema = mongoose.Schema({
     email: { type: String, required: true },
     picture:String,
     provider: { type: String, required: true },
-    id: { type: String, required: true }
+    id: { type: String, required: true , index:true }
 })
 
 

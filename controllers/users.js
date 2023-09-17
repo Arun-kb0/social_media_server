@@ -147,6 +147,7 @@ export const logout = async (req, res) => {
     }
 }
 
+
 export const getUsers = async (req, res) => {
     const { page } = req.query
     console.log(page)

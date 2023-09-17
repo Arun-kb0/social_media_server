@@ -45,6 +45,7 @@ export const createPost = async (req, res) => {
         ...post,
         creator_id: req.userId,
         createdAt: new Date().toString()
+        
     })
 
     try {
